@@ -1,5 +1,6 @@
 '''
-This is the 2nd milestone project from the online Udemy Python course. A basic BlackJack game is simulated. 
+This is a basic text-based BlackJack game. There is only 1 Player, playing against a computer Dealer. 
+The only action that a Player can take in the game is Hit or Stand. This game goes not include other common actions such as Split, Double Down or Insurance.  
 '''
 import random
 
@@ -45,13 +46,24 @@ class Hand:
     def __init__(self):
         self.cards = []
         self.value = 0
+        self.aces = 0
 
     def add_card(self, card):
         self.cards.append(card)
         self.value += card.value
 
+        if card.rank == 'Ace':
+            self.aces += 1
+
     def adjust_ace(self):
-        pass
+        while self.value > 21 and self.aces:
+            self.value -= 10
+            self.aces -= 1
+
+    def clear(self):
+        self.cards = []
+        self.value = 0
+        self.aces = 0
 
 
 class Chip:
@@ -78,7 +90,7 @@ class Player:
 
 def show_partial_cards(dealer_hand, player_hand):
 
-    print('Dealer cards:')
+    print('\nDealer cards:')
 
     for card in dealer_hand.cards:
 
@@ -92,21 +104,27 @@ def show_partial_cards(dealer_hand, player_hand):
         print(f'\t{card}')
 
 
-def show_all_cards():
-    pass
+def show_all_cards(dealer_hand, player_hand):
+    print(f'\nDealer count {dealer_hand.value} from cards:')
+    for card in dealer_hand.cards:
+        print(f'\t{card}')
+
+    print(f'\nPlayer count {player_hand.value} from cards:')
+    for card in player_hand.cards:
+        print(f'\t{card}')
 
 
 def take_bets(player):
     # Place bet
     while True:
         try:
-            bet = int(input('Place number of chips for your bet: '))
+            bet = int(input(f'\n>> You have {player.chip.chips} chips. Place number of chips for your bet: '))
         except:
-            print('Ooops, please enter a valid number')
+            print('>> Ooops, please enter a valid number')
             continue
         else:
             if bet > player.chip.chips:
-                print('Insufficient chips!')
+                print('>> Insufficient chips!')
                 continue
             else:
                 player.chip.bet = bet
@@ -114,6 +132,12 @@ def take_bets(player):
 
 
 def hit(deck, player_hand):
+
+    if len(deck.cards) == 0:
+        deck = new_deck()
+        print(deck)
+
+
     player_hand.add_card(deck.deal())
     player_hand.adjust_ace()
     
@@ -122,74 +146,125 @@ def hit_or_stand(deck, player_hand):
     global player_done
 
     while True:
-        action = input('\nHit or Stand? (enter h or s): ')
+        action = input('\n>> Hit or Stand? (enter h or s): ')
 
         if action.lower() == 'h':
             hit(deck, player_hand)
         elif action.lower() == 's':
             player_done = True
-            print('Player stands, Dealer is playing')
+            print('>> Player stands, Dealer is playing...')
+        elif action.lower() == 'exit':
+            exit()
         else:
-            print('Invalid input, please try again.')
+            print('>> Invalid input, please try again.')
             continue
         break
+
+def new_deck():
+    print('>> No more cards on deck, new deck will be added and shuffled.')
+    deck = Deck()
+    deck.shuffle()
+    print(deck)
+    return deck
+
+def player_win(player):
+    player.chip.win_bet()
+
+def player_lose(player):
+    player.chip.lose_bet()
+
+def player_blackjack(player):
+    player.chip.bet *= 2
+    player.chip.win_bet()
+
 
 ''' 
 Main game logic
 '''
-# Global variables
+
 dealer = Player('Dealer')
 player = Player('Player')
 deck = Deck() 
 
-# game_count = 0
-# game_on = True
-
 deck.shuffle()
 
-#while game_on = True:
+print('Welcome to BlackJack!')
 
-take_bets(player)
 
-player.hand.add_card(deck.deal())  # deal Player's first card
-dealer.hand.add_card(deck.deal())  # deal Dealer's first card
-player.hand.add_card(deck.deal())  # deal Player's second card
-dealer.hand.add_card(deck.deal())  # deal Dealer's second card
+while True:
 
-show_partial_cards(dealer.hand, player.hand)
+    # clear hands for a new round and reset flag
+    dealer.hand.clear()
+    player.hand.clear()
+    player_done = False
+    dealer_to_play = True
 
-while player_done == False:
-    hit_or_stand(deck, player.hand)
-    show_partial_cards(dealer.hand, player.hand)
+    # take bet from Player
+    take_bets(player)
 
-'''
-Unit Tests
-'''
-'''
-# Test card initialisation
-print('\n--- 1. INIT CARD ---')
-ace_of_hearts = Card('Heart','Ace')
-print(ace_of_hearts.suit)
-print(ace_of_hearts)
+    
+    if len(deck.cards) < 4:
+        deck = new_deck()
+        print(deck)
 
-# Test deck initialisation
-print('--- 2. INIT DECK ---')
-deck = Deck()
-print(deck)
-print(deck.cards[0])
-print(deck.cards[-1])
-deck.shuffle()
-print('-Deck shuffled-')
-print(deck.cards[0])
-print(deck.cards[-1])
-print('-Drawn 2 cards-')
-deck.deal()
-deck.deal()
-print(deck)
+    # deal first 2 cards for Dealer and Player
+    player.hand.add_card(deck.deal())  # deal Player's first card
+    dealer.hand.add_card(deck.deal())  # deal Dealer's first card
+    player.hand.add_card(deck.deal())  # deal Player's second card
+    dealer.hand.add_card(deck.deal())  # deal Dealer's second card     
 
-# Test player initialisation
-print('--- 3. INIT PLAYER & HAND ---')
-test_player = Player('Test Player')
-print(test_player.name)
-print(test_player.hand.value) 
-'''
+    while player_done == False:
+        
+        # Check for BlackJack 
+        if len(player.hand.cards) == 2 and player.hand.value == 21 and dealer.hand.value != 21:
+            show_all_cards(dealer.hand, player.hand)
+            player_blackjack(player)
+            print('>> BlackJack!! Player wins double the bet!')
+            dealer_to_play = False
+            break
+        elif len(player.hand.cards) == 2 and player.hand.value == 21 and dealer.hand.value == 21:
+            show_all_cards(dealer.hand, player.hand)
+            print('>> Both Player and Dealer has BlackJack. Push!')
+            dealer_to_play = False
+            break
+        
+        show_partial_cards(dealer.hand, player.hand)
+
+        # Player choose to hit or stand
+        hit_or_stand(deck, player.hand)
+
+        # Player loses immediately if busts
+        if player.hand.value > 21:
+            show_all_cards(dealer.hand, player.hand)
+            player_lose(player)
+            print('>> Player busts, Dealer wins')
+            dealer_to_play = False
+            break
+        elif player.hand.value == 21:
+            print('>> You have a total of 21! Dealer is playing...')
+            break
+            
+    # Dealer's turn    
+    if dealer_to_play == True:
+
+        while dealer.hand.value < 17:
+            hit(deck, dealer.hand)
+
+        show_all_cards(dealer.hand, player.hand)
+
+        if dealer.hand.value > 21: # Dealer bust
+            player_win(player)
+            print('>> Dealer busts! Player wins!\n')
+
+        elif dealer.hand.value > player.hand.value: # Dealer wins
+            player_lose(player)
+            print('>> Dealer wins\n')
+
+        elif dealer.hand.value < player.hand.value: # Player wins
+            player_win(player)
+            print('>> Player wins!\n')
+
+        elif dealer.hand.value == player.hand.value: # Push
+            print('>> Push!\n')
+    
+    print(deck)
