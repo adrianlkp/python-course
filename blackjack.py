@@ -135,8 +135,6 @@ def hit(deck, player_hand):
 
     if len(deck.cards) == 0:
         deck = new_deck()
-        print(deck)
-
 
     player_hand.add_card(deck.deal())
     player_hand.adjust_ace()
@@ -160,10 +158,11 @@ def hit_or_stand(deck, player_hand):
             continue
         break
 
+
 def new_deck():
-    print('>> No more cards on deck, new deck will be added and shuffled.')
     deck = Deck()
     deck.shuffle()
+    print('\n>> No more cards on deck, new deck added and shuffled.')
     print(deck)
     return deck
 
@@ -202,10 +201,9 @@ while True:
     # take bet from Player
     take_bets(player)
 
-    
+    # add new deck if not enough cards to deal
     if len(deck.cards) < 4:
         deck = new_deck()
-        print(deck)
 
     # deal first 2 cards for Dealer and Player
     player.hand.add_card(deck.deal())  # deal Player's first card
@@ -215,7 +213,7 @@ while True:
 
     while player_done == False:
         
-        # Check for BlackJack 
+        # check for BlackJack 
         if len(player.hand.cards) == 2 and player.hand.value == 21 and dealer.hand.value != 21:
             show_all_cards(dealer.hand, player.hand)
             player_blackjack(player)
@@ -266,5 +264,3 @@ while True:
 
         elif dealer.hand.value == player.hand.value: # Push
             print('>> Push!\n')
-    
-    print(deck)
